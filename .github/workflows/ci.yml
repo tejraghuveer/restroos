@@ -52,7 +52,13 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
+      # Use the IPv4 loopback explicitly: "localhost" can resolve to ::1 first,
+      # where the service container is not always reachable.
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: restroos_owner
       PGPASSWORD: restroos_owner_dev_password
+      PGDATABASE: restroos
     steps:
       - uses: actions/checkout@v4
 
@@ -66,22 +72,28 @@ jobs:
         working-directory: apps/api
         run: pip install -r requirements-dev.txt
 
+      - name: Check psql connectivity
+        run: |
+          psql --version
+          psql -v ON_ERROR_STOP=1 -c '\conninfo'
+          psql -v ON_ERROR_STOP=1 -c 'select version();'
+
       - name: Create low-privilege runtime role
-        run: psql -h localhost -U restroos_owner -d restroos -v ON_ERROR_STOP=1 -f infra/postgres/init.sql
+        run: psql -v ON_ERROR_STOP=1 --echo-errors -f infra/postgres/init.sql
 
       - name: Apply migrations as schema owner
         working-directory: apps/api
         env:
-          DATABASE_URL: postgresql+asyncpg://restroos_owner:restroos_owner_dev_password@localhost:5432/restroos
+          DATABASE_URL: postgresql+asyncpg://restroos_owner:restroos_owner_dev_password@127.0.0.1:5432/restroos
         run: alembic upgrade head
 
       - name: Harden runtime role
-        run: psql -h localhost -U restroos_owner -d restroos -v ON_ERROR_STOP=1 -f infra/postgres/harden.sql
+        run: psql -v ON_ERROR_STOP=1 --echo-errors -f infra/postgres/harden.sql
 
       - name: Run RLS isolation tests as the runtime role
         working-directory: apps/api
         env:
-          TEST_POSTGRES_URL: postgresql+asyncpg://restroos_app:restroos_app_dev_password@localhost:5432/restroos
+          TEST_POSTGRES_URL: postgresql+asyncpg://restroos_app:restroos_app_dev_password@127.0.0.1:5432/restroos
         run: pytest tests/isolation/test_postgres_rls.py -q
 
   frontend:

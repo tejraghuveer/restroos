@@ -162,7 +162,14 @@ docker compose up -d
 ```
 
 The container creates the `restroos` database and the `restroos_owner` role,
-then runs `infra/postgres/init.sql` to create the runtime role.
+then runs `infra/postgres/init.sql` to create the runtime role. Init scripts only
+run against an empty data volume; `init.sql` is idempotent, so you can re-apply
+it at any time from the repo root:
+
+```powershell
+Get-Content infra\postgres\init.sql |
+  docker exec -i restroos-postgres psql -U restroos_owner -d restroos -v ON_ERROR_STOP=1 -f /dev/stdin
+```
 
 Migrations must run as the owner, because the runtime role cannot change the
 schema:
