@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.sqlite3
+*.db
+.env
+.env.*
+!**/.env.example
+apps/api/.env
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.local
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime
+*.log
+uploads/
