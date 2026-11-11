@@ -94,7 +94,12 @@ jobs:
         working-directory: apps/api
         env:
           TEST_POSTGRES_URL: postgresql+asyncpg://restroos_app:restroos_app_dev_password@127.0.0.1:5432/restroos
-        run: pytest tests/isolation/test_postgres_rls.py -q
+        run: |
+          # A missing TEST_POSTGRES_URL would skip the suite and still exit 0,
+          # which would make this job meaningless. Require real passes.
+          set -o pipefail
+          pytest tests/isolation/test_postgres_rls.py -q | tee pytest-rls.out
+          grep -qE '[0-9]+ passed' pytest-rls.out
 
   frontend:
     name: Frontend build
